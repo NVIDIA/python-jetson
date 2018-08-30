@@ -244,6 +244,9 @@ class Device():
             # XXX parameterize based on chip
             self.size = 128
 
+            self.valid = False
+            self.data = []
+
         @staticmethod
         def parse_string(data, offset, length):
             length = data[offset]
@@ -313,6 +316,9 @@ class Device():
 
             if checksum != verify:
                 print('checksum error: expected %04x, got %04x' % (checksum, verify))
+                self.valid = False
+            else:
+                self.valid = True
 
             return self.data
 
@@ -373,7 +379,6 @@ class Device():
         self.buttons.append(self.force)
 
         self.eeprom = Device.Eeprom(self.ftdi)
-        self.eeprom.read()
 
 '''
 Lists all supported devices.
@@ -445,13 +450,17 @@ def do_button_release(url, args):
 Reads the EEPROM and prints a hexdump of it to standard output.
 '''
 def do_eeprom_dump(device, args):
+    device.eeprom.read()
     device.eeprom.dump()
 
 '''
 Reads the EEPROM and shows a human readable representation of it.
 '''
 def do_eeprom_show(device, args):
-    device.eeprom.show()
+    device.eeprom.read()
+
+    if device.eeprom.valid:
+        device.eeprom.show()
 
 '''
 Reads the EEPROM and writes the raw data to a file.
