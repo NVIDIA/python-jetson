@@ -354,6 +354,26 @@ class Device():
         def dump(self, use_ascii = True, file = sys.stdout):
             hexdump(self.data, use_ascii = use_ascii, file = file)
 
+    class PowerRail():
+        def __init__(self, port, name, config, input, bit):
+            self.port = port
+            self.name = name
+            self.config = config
+            self.input = input
+            self.bit = bit
+
+        def status(self):
+            value = self.port.read_from(self.config, 1)
+            value[0] |= 0xc0;
+            self.port.write_to(self.config, value)
+
+            value = self.port.read_from(self.input, 1)
+
+            if value[0] & 1 << self.bit:
+                return False
+            else:
+                return True
+
     def __init__(self, url):
         self.ftdi = Ftdi.create_from_url(url)
 
@@ -365,6 +385,7 @@ class Device():
         port = self.i2c.get_port(0x74)
 
         self.buttons = []
+        self.rails = []
 
         self.power = Device.I2cButton(port, "power", 0x7, 0x3, 4)
         self.buttons.append(self.power)
@@ -379,6 +400,12 @@ class Device():
         self.buttons.append(self.force)
 
         self.eeprom = Device.Eeprom(self.ftdi)
+
+        self.core = Device.PowerRail(port, "core", 0x7, 0x1, 6)
+        self.rails.append(self.core)
+
+        self.cpu = Device.PowerRail(port, "cpu", 0x7, 0x1, 7)
+        self.rails.append(self.cpu)
 
 '''
 Lists all supported devices.
@@ -445,6 +472,30 @@ def do_button_release(url, args):
             break
     else:
         print('unknown button "%s"' % name)
+
+def do_power_rail(url, args):
+    try:
+        device = Device(url)
+    except:
+        raise
+
+    if len(args):
+        name = args[0]
+
+        for rail in device.rails:
+            if rail.name == name:
+                rails = [ rail ]
+                break
+        else:
+            print('unknown power rail "%s"' % name)
+            return
+    else:
+        rails = device.rails
+
+    for rail in rails:
+        status = 'on' if rail.status() else 'off'
+
+        print('%s: %s' % (rail.name, status))
 
 '''
 Reads the EEPROM and prints a hexdump of it to standard output.
@@ -526,6 +577,7 @@ commands = {
         'devices': do_devices_list,
         'press': do_button_press,
         'release': do_button_release,
+        'power-rail': do_power_rail,
         'eeprom': do_eeprom,
     }
 

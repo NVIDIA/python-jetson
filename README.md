@@ -64,3 +64,8 @@ to save the EEPROM contents into a file, specified as an argument,
 ``erase`` to erase the EEPROM. The ``dump`` and ``show`` commands can be
 used to read the EEPROM and show a hexdump or a decoded version,
 respectively.
+
+Some boards support querying the state of the core and the CPU power
+rails. This can be done using the ``power-rail`` command. An optional
+argument can be used to specify the name of the rail to query. If no
+value is specified, the status for all power rails will be shown.
