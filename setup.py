@@ -22,6 +22,7 @@ setuptools.setup(
     ],
     scripts = [
         'bin/jetson-control',
+        'bin/jetson-demux',
     ],
     package_dir = { '': '.' },
     package_data = {
