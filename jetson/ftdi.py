@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import argparse, array, io, string, struct, sys, time
+import string, sys
 
 from pyftdi.ftdi import Ftdi
 from pyftdi.i2c import I2cController
@@ -407,198 +407,23 @@ class Device():
         self.cpu = Device.PowerRail(port, "cpu", 0x7, 0x1, 7)
         self.rails.append(self.cpu)
 
-'''
-Lists all supported devices.
-'''
-def do_devices_list(url, args):
-    products = {
+class Product():
+    def __init__(self, vid, pid, description, serial):
+        self.vid = vid
+        self.pid = pid
+        self.description = description
+        self.serial = serial
+
+def find():
+    supported = {
             'pm342': ( 0x0403, 0x6011 )
         }
+    vps = supported.values()
+    products = []
 
-    products = Ftdi.find_all(products.values())
+    for vid, pid, serial, interfaces, description in Ftdi.find_all(vps):
+        product = Product(vid, pid, description, serial)
 
-    for vid, pid, serial, interfaces, description in products:
-        print('%04x:%04x: %s' % (vid, pid, description))
+        products.append(product)
 
-        if serial:
-            print('  serial:', serial)
-
-'''
-Simulates a button press.
-
-The first argument is the name of the button to press. It can be one of:
-
-* power
-* reset
-* recovery
-* force-off
-'''
-def do_button_press(url, args):
-    try:
-        device = Device(url)
-    except:
-        raise
-
-    name = args[0]
-
-    for button in device.buttons:
-        if button.name == name:
-            button.press()
-            break
-    else:
-        print('unknown button "%s"' % name)
-
-'''
-Simulates a button release.
-
-The first argument is the name of the button to release. It can be one of:
-
-* power
-* reset
-* recovery
-* force-off
-'''
-def do_button_release(url, args):
-    try:
-        device = Device(url)
-    except:
-        raise
-
-    name = args[0]
-
-    for button in device.buttons:
-        if button.name == name:
-            button.release()
-            break
-    else:
-        print('unknown button "%s"' % name)
-
-def do_power_rail(url, args):
-    try:
-        device = Device(url)
-    except:
-        raise
-
-    if len(args):
-        name = args[0]
-
-        for rail in device.rails:
-            if rail.name == name:
-                rails = [ rail ]
-                break
-        else:
-            print('unknown power rail "%s"' % name)
-            return
-    else:
-        rails = device.rails
-
-    for rail in rails:
-        status = 'on' if rail.status() else 'off'
-
-        print('%s: %s' % (rail.name, status))
-
-'''
-Reads the EEPROM and prints a hexdump of it to standard output.
-'''
-def do_eeprom_dump(device, args):
-    device.eeprom.read()
-    device.eeprom.dump()
-
-'''
-Reads the EEPROM and shows a human readable representation of it.
-'''
-def do_eeprom_show(device, args):
-    device.eeprom.read()
-
-    if device.eeprom.valid:
-        device.eeprom.show()
-
-'''
-Reads the EEPROM and writes the raw data to a file.
-
-The first argument specifies the path to the file.
-'''
-def do_eeprom_read(device, args):
-    with io.open(args[0], 'wb') as file:
-        data = device.eeprom.read()
-        file.write(data)
-
-'''
-Reads a file and writes its contents to the EEPROM.
-
-The first argument specifies the path to the file.
-'''
-def do_eeprom_write(device, args):
-    with io.open(args[0], 'rb') as file:
-        data = file.read()
-        device.eeprom.write(data)
-
-'''
-Erases the EEPROM.
-'''
-def do_eeprom_erase(device, args):
-    device.eeprom.erase()
-
-'''
-Executes one of the EEPROM sub-commands.
-
-The first argument is the name of the sub-command. Subsequent arguments will
-be passed to the sub-command.
-'''
-def do_eeprom(url, args):
-    try:
-        device = Device(url)
-    except:
-        raise
-
-    subcommands = {
-            'dump': do_eeprom_dump,
-            'show': do_eeprom_show,
-            'read': do_eeprom_read,
-            'write': do_eeprom_write,
-            'erase': do_eeprom_erase,
-        }
-
-    if args:
-        subcommand = args[0]
-        args = args[1:]
-
-        for name, function in subcommands.items():
-            if name == subcommand:
-                function(device, args)
-                break
-        else:
-            print('eeprom: unknown subcommand "%s"' % subcommand)
-    else:
-        do_eeprom_dump(device, args)
-
-# list of commands supported by the jetson-control utility
-commands = {
-        'devices': do_devices_list,
-        'press': do_button_press,
-        'release': do_button_release,
-        'power-rail': do_power_rail,
-        'eeprom': do_eeprom,
-    }
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--serial', type=str, help = 'serial number')
-    parser.add_argument('command', nargs = '*')
-    args = parser.parse_args()
-
-    # if the user requested a specific serial number, use that to look up an
-    # FTDI device
-    if args.serial:
-        url = 'ftdi://::%s/1' % args.serial
-    else:
-        url = 'ftdi://ftdi:/1'
-
-    command, *args = args.command
-
-    for name, function in commands.items():
-        if name == command:
-            function(url, args)
-            break
-    else:
-        print('unknown command "%s"' % command)
+    return products
