@@ -312,4 +312,7 @@ if __name__ == '__main__':
     else:
         url = 'ftdi://ftdi:/1'
 
-    args.exec(url, args)
+    try:
+        args.exec(url, args)
+    except jetson.ftdi.Error as e:
+        print(e)
