@@ -4,6 +4,7 @@ import string, sys
 
 from pyftdi.ftdi import Ftdi
 from pyftdi.i2c import I2cController
+from pyftdi.usbtools import UsbToolsError
 
 '''
 Determines whether or not a byte can be printed. Note that this excludes
@@ -46,6 +47,12 @@ def hexdump(data, use_ascii = True, file = sys.stdout):
                 dump = ' | '
 
             print('', file = file)
+
+'''
+Base class for exceptions in this module.
+'''
+class Error(Exception):
+    pass
 
 '''
 Represents an FTDI device that can be controlled by this utility. A device
@@ -375,7 +382,10 @@ class Device():
                 return True
 
     def __init__(self, url):
-        self.ftdi = Ftdi.create_from_url(url)
+        try:
+            self.ftdi = Ftdi.create_from_url(url)
+        except UsbToolsError:
+            raise Error('no device found for URL %s' % url)
 
         self.i2c = I2cController()
         self.i2c.set_retry_count(1)
