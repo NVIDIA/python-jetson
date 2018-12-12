@@ -293,7 +293,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--serial', type=str, help = 'serial number')
 
-    command_parsers = parser.add_subparsers(title = 'commands')
+    command_parsers = parser.add_subparsers(title = 'commands',
+                                            dest = 'command',
+                                            required = True)
 
     for subcommand in commands:
         sub_parser = command_parsers.add_parser(subcommand.name,
