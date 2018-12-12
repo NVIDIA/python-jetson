@@ -14,19 +14,20 @@ def print_streams(demux, fileobj = sys.stdout):
     for name, path in demux.get_streams().items():
         print('%-*s %s' % (length + 1, '%s:' % name, path), file = fileobj)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--device', type = str, required = True)
-args = parser.parse_args()
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--device', type = str, required = True)
+    args = parser.parse_args()
 
-demux = jetson.tcu.Demux(args.device)
-print_streams(demux)
+    demux = jetson.tcu.Demux(args.device)
+    print_streams(demux)
 
-selector = selectors.DefaultSelector()
-demux.select(selector)
-demux.reset()
+    selector = selectors.DefaultSelector()
+    demux.select(selector)
+    demux.reset()
 
-while True:
-    events = selector.select()
+    while True:
+        events = selector.select()
 
-    for key, mask in events:
-        key.data(key.fileobj, mask)
+        for key, mask in events:
+            key.data(key.fileobj, mask)
