@@ -27,7 +27,11 @@ if __name__ == '__main__':
     demux.reset()
 
     while True:
-        events = selector.select()
+        try:
+            events = selector.select()
+        except KeyboardInterrupt as e:
+            print()
+            break
 
         for key, mask in events:
             key.data(key.fileobj, mask)
