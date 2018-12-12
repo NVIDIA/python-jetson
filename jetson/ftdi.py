@@ -305,6 +305,7 @@ class Device():
 
         def read(self):
             self.data = bytearray()
+            self.erased = True
 
             ep = self.ftdi.usb_dev
             offset = 0
@@ -315,6 +316,9 @@ class Device():
                 if not data:
                     break
 
+                if data[0] != 0xff or data[1] != 0xff:
+                    self.erased = False
+
                 self.data.extend(data)
                 offset += 1
 
@@ -322,7 +326,10 @@ class Device():
             verify = (data[1] << 8) | data[0]
 
             if checksum != verify:
-                print('checksum error: expected %04x, got %04x' % (checksum, verify))
+                if not self.erased:
+                    print('checksum error: expected %04x, got %04x' %
+                            (checksum, verify))
+
                 self.valid = False
             else:
                 self.valid = True
