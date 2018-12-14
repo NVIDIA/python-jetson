@@ -293,9 +293,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--serial', type=str, help = 'serial number')
 
-    command_parsers = parser.add_subparsers(title = 'commands',
-                                            dest = 'command',
-                                            required = True)
+    command_parsers = parser.add_subparsers(title = 'commands')
 
     for subcommand in commands:
         sub_parser = command_parsers.add_parser(subcommand.name,
@@ -313,6 +311,14 @@ if __name__ == '__main__':
         url = 'ftdi://ftdi:/1'
 
     try:
-        args.exec(url, args)
+        # Python 3.7.0 introduced a 'required' keyword argument to the
+        # ArgumentParser.add_subparsers() function, which, if True, causes
+        # the parser to output an error if no command was specified on the
+        # command-line. To support older versions of Python as well, check
+        # manually whether or not a command was specified.
+        if hasattr(args, 'exec'):
+            args.exec(url, args)
+        else:
+            parser.print_help()
     except jetson.ftdi.Error as e:
         print(e)
