@@ -19,7 +19,12 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--device', type = str, required = True)
     args = parser.parse_args()
 
-    demux = jetson.tcu.Demux(args.device)
+    try:
+        demux = jetson.tcu.Demux(args.device)
+    except OSError as e:
+        print('%s: %s' % (e.filename, e.strerror))
+        sys.exit(1)
+
     print_streams(demux)
 
     selector = selectors.DefaultSelector()
