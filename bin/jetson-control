@@ -13,11 +13,11 @@ class Command:
             for subcommand in cls.subcommands:
                 sub_parser = sub_parsers.add_parser(subcommand.name,
                                                     help = subcommand.help)
-                sub_parser.set_defaults(exec = subcommand.exec)
+                sub_parser.set_defaults(run = subcommand.run)
                 subcommand.setup(sub_parser)
 
     @classmethod
-    def exec(url, args):
+    def run(url, args):
         pass
 
 '''
@@ -28,7 +28,7 @@ class CommandDevices(Command):
     help = 'list all supported devices'
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         products = jetson.ftdi.find()
 
         for product in products:
@@ -45,7 +45,7 @@ class CommandButtons(Command):
     help = 'list all supported buttons'
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -73,7 +73,7 @@ class CommandPress(Command):
         parser.add_argument('button', help = 'name of the button to simulate')
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -105,7 +105,7 @@ class CommandRelease(Command):
         parser.add_argument('button', help = 'name of the button to simulate')
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -130,7 +130,7 @@ class CommandPowerRail(Command):
         parser.add_argument('rail', nargs = '?', help = 'name of power rail')
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -162,7 +162,7 @@ class CommandEepromDump(Command):
     help = 'display hexadecimal dump of EEPROM contents'
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -179,7 +179,7 @@ class CommandEepromShow(Command):
     help = 'display EEPROM contents in human readable form'
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -204,7 +204,7 @@ class CommandEepromRead(Command):
         parser.add_argument('file', type = argparse.FileType('wb'))
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -227,7 +227,7 @@ class CommandEepromWrite(Command):
         parser.add_argument('file', type = argparse.FileType('rb'))
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -244,7 +244,7 @@ class CommandEepromErase(Command):
     help = 'erase EEPROM'
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
@@ -271,13 +271,13 @@ class CommandEeprom(Command):
         ]
 
     @classmethod
-    def exec(cls, url, args):
+    def run(cls, url, args):
         try:
             device = jetson.ftdi.Device(url)
         except:
             raise
 
-        cls.subcommands[0].exec(url, args)
+        cls.subcommands[0].run(url, args)
 
 # list of commands supported by the jetson-control utility
 commands = {
@@ -298,7 +298,7 @@ if __name__ == '__main__':
     for subcommand in commands:
         sub_parser = command_parsers.add_parser(subcommand.name,
                                                 help = subcommand.help)
-        sub_parser.set_defaults(exec = subcommand.exec)
+        sub_parser.set_defaults(run = subcommand.run)
         subcommand.setup(sub_parser)
 
     args = parser.parse_args()
@@ -316,8 +316,8 @@ if __name__ == '__main__':
         # the parser to output an error if no command was specified on the
         # command-line. To support older versions of Python as well, check
         # manually whether or not a command was specified.
-        if hasattr(args, 'exec'):
-            args.exec(url, args)
+        if hasattr(args, 'run'):
+            args.run(url, args)
         else:
             parser.print_help()
     except jetson.ftdi.Error as e:
