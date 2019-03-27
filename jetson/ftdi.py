@@ -388,21 +388,30 @@ class Device():
             else:
                 return True
 
-    def __init__(self, url):
+    def __init__(self, ftdi, url):
+        self.ftdi = ftdi
+        self.url = url
+
+        self.buttons = []
+        self.rails = []
+
+class PM342(Device):
+    def __init__(self, ftdi, url):
+        super().__init__(ftdi, url)
+
         try:
-            self.ftdi = Ftdi.create_from_url(url)
+            self.ftdi.open_from_url(url)
         except UsbToolsError:
             raise Error('no device found for URL %s' % url)
+
+        self.gpio = Device.GpioController(self.ftdi)
+        self.eeprom = Device.Eeprom(self.ftdi)
 
         self.i2c = I2cController()
         self.i2c.set_retry_count(1)
         self.i2c.configure(url)
 
-        self.gpio = Device.GpioController(self.ftdi)
         port = self.i2c.get_port(0x74)
-
-        self.buttons = []
-        self.rails = []
 
         self.power = Device.I2cButton(port, "power", 0x7, 0x3, 4)
         self.buttons.append(self.power)
@@ -416,13 +425,20 @@ class Device():
         self.force = Device.GpioButton(self.gpio, 6, "force-off")
         self.buttons.append(self.force)
 
-        self.eeprom = Device.Eeprom(self.ftdi)
-
         self.core = Device.PowerRail(port, "core", 0x7, 0x1, 6)
         self.rails.append(self.core)
 
         self.cpu = Device.PowerRail(port, "cpu", 0x7, 0x1, 7)
         self.rails.append(self.cpu)
+
+def open(url):
+    ftdi = Ftdi()
+    vendor, product, index, serial, interface = ftdi.get_identifiers(url)
+
+    if vendor == 0x0403 and product == 0x6011:
+        return PM342(ftdi, url)
+
+    raise Exception('Unsupported device %04x:%04x' % (vendor, product))
 
 class Product():
     def __init__(self, vid, pid, description, serial):

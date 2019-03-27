@@ -47,7 +47,7 @@ class CommandButtons(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -75,7 +75,7 @@ class CommandPress(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -107,7 +107,7 @@ class CommandRelease(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -132,7 +132,7 @@ class CommandPowerRail(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -164,7 +164,7 @@ class CommandEepromDump(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -181,7 +181,7 @@ class CommandEepromShow(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -206,7 +206,7 @@ class CommandEepromRead(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -229,7 +229,7 @@ class CommandEepromWrite(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -246,7 +246,7 @@ class CommandEepromErase(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
@@ -273,7 +273,7 @@ class CommandEeprom(Command):
     @classmethod
     def run(cls, url, args):
         try:
-            device = jetson.ftdi.Device(url)
+            device = jetson.ftdi.open(url)
         except:
             raise
 
