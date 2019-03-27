@@ -395,6 +395,27 @@ class Device():
         self.buttons = []
         self.rails = []
 
+class NanoDebug(Device):
+    def __init__(self, ftdi, url):
+        super().__init__(ftdi, url)
+
+        try:
+            self.ftdi.open_bitbang_from_url(url)
+        except UsbToolsError:
+            raise Error('no device found for URL %s' % url)
+
+        self.gpio = Device.GpioController(self.ftdi)
+        self.eeprom = Device.Eeprom(self.ftdi)
+
+        self.reset = Device.GpioButton(self.gpio, 0, 'reset')
+        self.buttons.append(self.reset)
+
+        self.recovery = Device.GpioButton(self.gpio, 1, 'recovery')
+        self.buttons.append(self.recovery)
+
+        self.power = Device.GpioButton(self.gpio, 3, 'power')
+        self.buttons.append(self.power)
+
 class PM342(Device):
     def __init__(self, ftdi, url):
         super().__init__(ftdi, url)
@@ -435,6 +456,9 @@ def open(url):
     ftdi = Ftdi()
     vendor, product, index, serial, interface = ftdi.get_identifiers(url)
 
+    if vendor == 0x0403 and product == 0x6001:
+        return NanoDebug(ftdi, url)
+
     if vendor == 0x0403 and product == 0x6011:
         return PM342(ftdi, url)
 
@@ -449,6 +473,7 @@ class Product():
 
 def find():
     supported = {
+            'nano': ( 0x0403, 0x6001 ),
             'pm342': ( 0x0403, 0x6011 )
         }
     vps = supported.values()
