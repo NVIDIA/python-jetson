@@ -214,9 +214,10 @@ class CommandEepromRead(Command):
         args.file.write(data)
 
 '''
-Reads a file and writes its contents to the EEPROM.
+Reads a file and writes its contents to the EEPROM or a file.
 
-The first argument specifies the path to the file.
+The first argument specifies the path to the file. If a second argument is
+specified, output will be written to the given file instead of the EEPROM.
 '''
 class CommandEepromWrite(Command):
     name = 'write'
@@ -225,6 +226,7 @@ class CommandEepromWrite(Command):
     @classmethod
     def setup(cls, parser):
         parser.add_argument('file', type = argparse.FileType('rb'))
+        parser.add_argument('output', nargs = '?', type = argparse.FileType('wb'))
 
     @classmethod
     def run(cls, url, args):
@@ -234,9 +236,13 @@ class CommandEepromWrite(Command):
             raise
 
         data = args.file.read()
-        # reset the device before writing the EEPROM
-        device.unlock()
-        device.eeprom.write(data)
+
+        if args.output:
+            device.eeprom.save(data, args.output)
+        else:
+            # reset the device before writing the EEPROM
+            device.unlock()
+            device.eeprom.write(data)
 
 '''
 Erases the EEPROM.

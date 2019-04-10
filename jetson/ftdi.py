@@ -398,6 +398,10 @@ class Device():
 
             return self.data
 
+        def save(self, data, output):
+            desc = Device.Eeprom.parse(data)
+            output.write(desc.write())
+
         def write(self, data):
             desc = Device.Eeprom.parse(data)
             ep = self.ftdi.usb_dev
