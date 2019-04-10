@@ -571,3 +571,5 @@ def find():
         products.append(product)
 
     return products
+
+# vim: set et sw=4 sts=4 ts=4:

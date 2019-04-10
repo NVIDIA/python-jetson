@@ -330,3 +330,5 @@ if __name__ == '__main__':
             parser.print_help()
     except jetson.ftdi.Error as e:
         print(e)
+
+# vim: set et sw=4 sts=4 ts=4:
