@@ -1,10 +1,26 @@
 #!/usr/bin/python3
 
-import string, sys
+import enum, string, sys
 
 from pyftdi.ftdi import Ftdi
 from pyftdi.i2c import I2cController
 from pyftdi.usbtools import UsbToolsError
+
+class cbus_func(enum.IntEnum):
+    CBUS_TXDEN = 0
+    CBUS_PWREN = 1
+    CBUS_RXLED = 2
+    CBUS_TXLED = 3
+    CBUS_TXRXLED = 4
+    CBUS_SLEEP = 5
+    CBUS_CLK48 = 6
+    CBUS_CLK24 = 7
+    CBUS_CLK12 = 8
+    CBUS_CLK6 = 9
+    CBUS_IOMODE = 10
+    CBUS_BB_WR = 11
+    CBUS_BB_RD = 12
+    CBUS_BB = 13
 
 '''
 Determines whether or not a byte can be printed. Note that this excludes
@@ -205,6 +221,7 @@ class Device():
                 self.manufacturer = None
                 self.product = None
                 self.serial = None
+                self.cbus = []
 
                 self.size = size
 
@@ -324,6 +341,12 @@ class Device():
             offset = data[0x12] & 0x7f
             length = data[0x13] / 2
 
+            desc.cbus.append(cbus_func(data[0x14] & 0xf))
+            desc.cbus.append(cbus_func(data[0x14] >> 4))
+            desc.cbus.append(cbus_func(data[0x15] & 0xf))
+            desc.cbus.append(cbus_func(data[0x15] >> 4))
+            desc.cbus.append(cbus_func(data[0x16] & 0xf))
+
             desc.serial = Device.Eeprom.parse_string(data, offset, length)
 
             return desc
@@ -403,6 +426,13 @@ class Device():
             print('Manufacturer:', desc.manufacturer, file = file)
             print('Product:', desc.product, file = file)
             print('Serial:', desc.serial, file = file)
+
+            print('CBUS:')
+            print('  0:', desc.cbus[0])
+            print('  1:', desc.cbus[1])
+            print('  2:', desc.cbus[2])
+            print('  3:', desc.cbus[3])
+            print('  4:', desc.cbus[4])
 
         def dump(self, use_ascii = True, file = sys.stdout):
             hexdump(self.data, use_ascii = use_ascii, file = file)
