@@ -464,6 +464,12 @@ class Device():
         self.buttons = []
         self.rails = []
 
+    # XXX this is destructive, the device cannot be normally used after this
+    def unlock(self):
+        self.ftdi.open_from_url(self.url)
+        self.ftdi.poll_modem_status()
+        self.ftdi.set_latency_timer(0x77)
+
 class NanoDebug(Device):
     def __init__(self, ftdi, url):
         super().__init__(ftdi, url)

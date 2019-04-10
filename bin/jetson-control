@@ -234,6 +234,8 @@ class CommandEepromWrite(Command):
             raise
 
         data = args.file.read()
+        # reset the device before writing the EEPROM
+        device.unlock()
         device.eeprom.write(data)
 
 '''
