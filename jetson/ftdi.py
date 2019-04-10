@@ -139,12 +139,51 @@ class Device():
 
             self._write(data)
 
+    class CBUSGpioController:
+        class Pin:
+            def __init__(self, gpio, pin):
+                self.gpio = gpio
+                self.pin = pin
+
+                gpio.direction_output(pin)
+
+            def set(self, value):
+                self.gpio.set(self.pin, value)
+
+        def __init__(self, ftdi):
+            self.ftdi = ftdi
+            # default all pins to input
+            self.pins = 0x00
+
+        def direction_input(self, pin):
+            mask = 1 << pin
+            self.pins &= ~(mask << 4)
+
+        def direction_output(self, pin):
+            mask = 1 << pin
+            self.pins |= mask << 4
+
+        def set(self, pin, value):
+            mask = 1 << pin
+
+            # configure pin direction to output
+            if not self.pins & (mask << 4):
+                print('pin %u is not configured as an output' % pin)
+                return
+
+            if not value:
+                self.pins &= ~mask
+            else:
+                self.pins |= mask
+
+            self.ftdi.set_bitmode(self.pins, Ftdi.BITMODE_CBUS)
+
     '''
     Represents a button backed by a GPIO pin.
     '''
     class GpioButton():
         def __init__(self, gpio, pin, name):
-            self.gpio = Device.GpioController.Pin(gpio, pin)
+            self.gpio = gpio.Pin(gpio, pin)
             self.name = name
 
         def press(self):
@@ -404,7 +443,7 @@ class NanoDebug(Device):
         except UsbToolsError:
             raise Error('no device found for URL %s' % url)
 
-        self.gpio = Device.GpioController(self.ftdi)
+        self.gpio = Device.CBUSGpioController(self.ftdi)
         self.eeprom = Device.Eeprom(self.ftdi)
 
         self.reset = Device.GpioButton(self.gpio, 0, 'reset')
