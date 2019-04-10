@@ -407,6 +407,13 @@ class Device():
             ep = self.ftdi.usb_dev
             offset = 0
 
+            checksum = Device.Eeprom.checksum(data)
+            verify = (data[-1] << 8) | data[-2]
+
+            if checksum != verify:
+                print('checksum error: expected %04x, got %04x' % (checksum, verify))
+                sys.exit(1)
+
             while offset < self.size / 2:
                 value = (data[offset * 2 + 1] << 8) | data[offset * 2 + 0]
 
