@@ -148,7 +148,7 @@ class Device():
 
             data = self._read()
 
-            if not value:
+            if value:
                 data &= ~mask
             else:
                 data |= mask
@@ -203,10 +203,10 @@ class Device():
             self.name = name
 
         def press(self):
-            self.gpio.set(0)
+            self.gpio.set(1)
 
         def release(self):
-            self.gpio.set(1)
+            self.gpio.set(0)
 
     '''
     Represents the EEPROM found on an FTDI chip. This is typically 128 bytes,
