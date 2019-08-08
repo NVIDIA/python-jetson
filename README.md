@@ -26,6 +26,21 @@ $ pip install pyftdi
 ```
 
 Alternatively, use your preferred method to install pyftdi.
+Note that if by default python 2 is intalled in your system, make sure to install pip3 and python3. And run all commands with 3 appended binaries.
+
+```
+$ sudo apt-get install python3
+$ sudo apt-get install python3-pip
+$ pip3 install pyftd
+```
+
+### Installation
+
+Once you hace cloned the git. install the jetson modules with the following commands.
+
+```
+$ python3 setup.py install
+```
 
 ### Usage
 
