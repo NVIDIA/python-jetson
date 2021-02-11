@@ -4,7 +4,7 @@ import enum, string, sys
 
 from pyftdi.ftdi import Ftdi
 from pyftdi.i2c import I2cController
-from pyftdi.usbtools import UsbToolsError
+from pyftdi.usbtools import UsbTools, UsbToolsError
 
 class cbus_func(enum.IntEnum):
     CBUS_TXDEN = 0
@@ -373,8 +373,8 @@ class Device():
             offset = 0
 
             while offset < self.size / 2:
-                data = ep.ctrl_transfer(Ftdi.REQ_IN, Ftdi.SIO_READ_EEPROM, 0,
-                                        offset, 2, self.ftdi.usb_read_timeout)
+                data = ep.ctrl_transfer(Ftdi.REQ_IN, Ftdi.SIO_REQ_READ_EEPROM, 0,
+                                        offset, 2, self.ftdi._usb_read_timeout)
                 if not data:
                     break
 
@@ -417,14 +417,14 @@ class Device():
             while offset < self.size / 2:
                 value = (data[offset * 2 + 1] << 8) | data[offset * 2 + 0]
 
-                ep.ctrl_transfer(Ftdi.REQ_OUT, Ftdi.SIO_WRITE_EEPROM, value,
+                ep.ctrl_transfer(Ftdi.REQ_OUT, Ftdi.SIO_REQ_WRITE_EEPROM, value,
                                  offset, 2, self.ftdi.usb_write_timeout)
                 offset += 1
 
         def erase(self):
             ep = self.ftdi.usb_dev
 
-            ep.ctrl_transfer(Ftdi.REQ_OUT, Ftdi.SIO_ERASE_EEPROM, 0, 0, 0,
+            ep.ctrl_transfer(Ftdi.REQ_OUT, Ftdi.SIO_REQ_ERASE_EEPROM, 0, 0, 0,
                              self.ftdi.usb_write_timeout)
 
         def show(self, file = sys.stdout):
@@ -468,55 +468,32 @@ class Device():
             else:
                 return True
 
-    def __init__(self, ftdi, url):
+    def __init__(self, ftdi, device, interface):
         self.ftdi = ftdi
-        self.url = url
+        self.device = device
+        self.interface = interface
 
         self.buttons = []
         self.rails = []
 
     # XXX this is destructive, the device cannot be normally used after this
     def unlock(self):
-        self.ftdi.open_from_url(self.url)
+        self.ftdi.open_from_device(self.device, self.interface)
         self.ftdi.poll_modem_status()
         self.ftdi.set_latency_timer(0x77)
 
-class NanoDebug(Device):
-    def __init__(self, ftdi, url):
-        super().__init__(ftdi, url)
-
-        try:
-            self.ftdi.open_bitbang_from_url(url)
-        except UsbToolsError:
-            raise Error('no device found for URL %s' % url)
-
-        self.gpio = Device.CBUSGpioController(self.ftdi)
-        self.eeprom = Device.Eeprom(self.ftdi)
-
-        self.reset = Device.GpioButton(self.gpio, 0, 'reset')
-        self.buttons.append(self.reset)
-
-        self.recovery = Device.GpioButton(self.gpio, 1, 'recovery')
-        self.buttons.append(self.recovery)
-
-        self.power = Device.GpioButton(self.gpio, 3, 'power')
-        self.buttons.append(self.power)
-
 class PM342(Device):
-    def __init__(self, ftdi, url):
-        super().__init__(ftdi, url)
+    def __init__(self, ftdi, device, interface):
+        super().__init__(ftdi, device, interface)
 
-        try:
-            self.ftdi.open_from_url(url)
-        except UsbToolsError:
-            raise Error('no device found for URL %s' % url)
+        self.ftdi.open_mpsse_from_device(device, interface)
 
         self.gpio = Device.GpioController(self.ftdi)
         self.eeprom = Device.Eeprom(self.ftdi)
 
         self.i2c = I2cController()
         self.i2c.set_retry_count(1)
-        self.i2c.configure(url)
+        self.i2c.configure(device)
 
         port = self.i2c.get_port(0x74)
 
@@ -538,35 +515,58 @@ class PM342(Device):
         self.cpu = Device.PowerRail(port, "cpu", 0x7, 0x1, 7)
         self.rails.append(self.cpu)
 
+class NanoDebug(Device):
+    def __init__(self, ftdi, device, interface):
+        super().__init__(ftdi, device, interface)
+
+        self.ftdi.open_bitbang_from_device(device, interface, direction = 0x0,
+                                           latency = 16)
+
+        self.gpio = Device.CBUSGpioController(self.ftdi)
+        self.eeprom = Device.Eeprom(self.ftdi)
+
+        self.reset = Device.GpioButton(self.gpio, 0, 'reset')
+        self.buttons.append(self.reset)
+
+        self.recovery = Device.GpioButton(self.gpio, 1, 'recovery')
+        self.buttons.append(self.recovery)
+
+        self.power = Device.GpioButton(self.gpio, 3, 'power')
+        self.buttons.append(self.power)
+
 def open(url):
     ftdi = Ftdi()
-    vendor, product, index, serial, interface = ftdi.get_identifiers(url)
+    desc, interface = ftdi.get_identifiers(url)
+    dev = UsbTools.get_device(desc)
 
-    if vendor == 0x0403 and product == 0x6001:
-        return NanoDebug(ftdi, url)
+    if desc.vid == 0x0403 and desc.pid == 0x6011:
+        return PM342(ftdi, dev, interface)
 
-    if vendor == 0x0403 and product == 0x6011:
-        return PM342(ftdi, url)
+    if desc.vid == 0x0403 and desc.pid == 0x6015:
+        return NanoDebug(ftdi, dev, interface)
 
-    raise Exception('Unsupported device %04x:%04x' % (vendor, product))
+    raise Exception('Unsupported device %04x:%04x' % (desc.vid, desc.pid))
 
 class Product():
-    def __init__(self, vid, pid, description, serial):
-        self.vid = vid
-        self.pid = pid
-        self.description = description
-        self.serial = serial
+    def __init__(self, descriptor):
+        self.vid = descriptor.vid
+        self.pid = descriptor.pid
+        self.bus = descriptor.bus
+        self.address = descriptor.address
+        self.serial = descriptor.sn
+        self.index = descriptor.index
+        self.description = descriptor.description
 
 def find():
     supported = {
-            'nano': ( 0x0403, 0x6001 ),
-            'pm342': ( 0x0403, 0x6011 )
+            'pm342': ( 0x0403, 0x6011 ),
+            'nano': ( 0x0403, 0x6015 )
         }
     vps = supported.values()
     products = []
 
-    for vid, pid, serial, interfaces, description in Ftdi.find_all(vps):
-        product = Product(vid, pid, description, serial)
+    for descriptor, interfaces in Ftdi.find_all(vps):
+        product = Product(descriptor)
 
         products.append(product)
 

@@ -25,7 +25,9 @@ you'll have to manually install it using pip:
 $ pip install pyftdi
 ```
 
-Alternatively, use your preferred method to install pyftdi.
+Alternatively, use your preferred method to install pyftdi. Note that pyftdi
+is known to occasionally break API compatibility with earlier versions. The
+version that this tool was written against is pyftdi v0.52.9.
 
 ### Usage
 
