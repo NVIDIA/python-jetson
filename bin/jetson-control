@@ -32,7 +32,7 @@ class CommandDevices(Command):
         products = jetson.ftdi.find()
 
         for product in products:
-            print('%04x:%04x: %s' % (product.vid, product.pid, product.description))
+            print('Bus %03u Device %03u: ID %04x:%04x: %s' % (product.bus, product.address, product.vid, product.pid, product.description))
 
             if product.serial:
                 print('  serial:', product.serial)
@@ -299,6 +299,7 @@ commands = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('-D', '--device', type=str, help = 'bus:device address pair')
     parser.add_argument('-s', '--serial', type=str, help = 'serial number')
 
     command_parsers = parser.add_subparsers(title = 'commands')
@@ -315,6 +316,9 @@ if __name__ == '__main__':
     # FTDI device
     if args.serial:
         url = 'ftdi://::%s/1' % args.serial
+    elif args.device:
+        bus, address = [ int(x) for x in args.device.split(':') ]
+        url = 'ftdi://::%x:%x/1' % (bus, address)
     else:
         url = 'ftdi://ftdi:/1'
 
